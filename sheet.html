@@ -1,0 +1,262 @@
+<html>
+<head>
+	<title>title</title>
+	
+<script type="text/javascript" src="js/jquery-1.3.2.min.js"></script>
+<script type="text/javascript" src="js/multicolumn.js"></script>
+<script type="text/javascript" src="js/json2.js"></script>
+<script type="text/javascript" src="js/konami.js"></script>
+<style type="text/css">
+	
+	#sheet {
+		width:60em;
+	}
+	
+	.fila {
+		float:left;
+		width:inherit;
+		
+		
+	}
+	
+	.columna {
+		width:7em;
+		float:left;
+	}
+	
+	.cuadro{
+		float:left;
+		padding:10px;
+	}
+	
+	#sheetBasics {width:20em;}
+	#sheetSanity{width:15em;}
+	#sheetMagic{width:15em;}
+	#sheetHits{width:15em;}
+	#sheetSkills{width:55em;
+	
+
+	
+	}
+	
+	.redondo{
+		padding:20px;
+-webkit-column-count:2;
+-webkit-column-gap:2em;
+-moz-column-count:2;
+-moz-column-gap:2em;
+column-count:2;
+column-gap:2em;
+background-color:rgba(255, 0, 0, 0.1);
+ -moz-border-radius: 36px;
+ border-radius: 36px;
+  -moz-column-rule: 10px ;
+   -webkit-column-rule: 10px ;
+    column-rule: 10px ;
+		
+		
+	}
+	.right{float:right;}
+	
+	li { list-style: none;
+	float:left;
+	padding:3px;
+	font-size:x-small;
+	}
+	ul{width:inherit;
+	padding:0px;}
+	
+	.footer{clear:both;}
+	
+	.columnized div {
+						float: left;
+						width:70em;
+						position: relative; 		/@ Needed when using a 'read-on'-text @/
+						text-align: justify;
+						margin: 0;	 		/@ Don't use a margin! @/
+					}
+</style>
+</head>
+<body>
+	<script type="text/javascript">
+		
+		function get_url_param(name){ 
+			name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]"); 
+			var regexS = "[\\?&]"+name+"=([^&#]*)"; 
+			var regex = new RegExp( regexS ); 
+			var results = regex.exec( window.location.href ); 
+			if( results == null )    return ""; 
+			else return results[1];
+		}
+		
+		$(document).ready(function(){
+			
+					$(window).konami(function(){
+					//stats
+					$('#sheetRolls span').text('99');
+					$('#sheetSkills span span').text('99');
+					
+					var a=$('#sheetSanity li b').text();
+				$('#sheetSanity li b').parent().text(a);
+				$($('#sheetSanity li').get(100)).html('<b class="marcado">99</b>')
+
+				
+				var a=$('#sheetHits li b').text();
+				$('#sheetHits li b').parent().text(a);
+				var a=$('#sheetHits li:last').text();
+				$($('#sheetHits li:last')).html('<b class="marcado">'+a+'</b>');
+
+				
+				var a=$('#sheetMagic li b').text();
+				$('#sheetMagic li b').parent().text(a);
+				var a=$('#sheetMagic li:last').text();
+				$($('#sheetMagic li:last')).html('<b class="marcado">'+a+'</b>')
+			
+			
+					
+				});
+			
+			
+			var characterJSON= get_url_param('character');
+			document.character=JSON.parse(decodeURIComponent(characterJSON.replace(/\+/g,  " ")));
+			
+			
+			$('#nombre').text(document.character.nombre);
+			$('#ocupacion').text(document.character.ocupacion);
+			$('#genero').text(document.character.genero);
+			$('#edad').text(document.character.edad);
+			$('#residencia').text(document.character.residencia);
+			$('#ingresos').text(document.character.ingresos);
+			$('#heridas').text(document.character.heridas);
+			$('#marcas').text(document.character.marcas);
+			$('#STR').text(document.character.STR);
+			$('#CON').text(document.character.CON);
+			$('#SIZ').text(document.character.SIZ);
+			$('#DEX').text(document.character.DEX);
+			$('#APP').text(document.character.APP);
+			$('#SAN').text(document.character.POW*5);
+			$('#INT').text(document.character.INT);
+			$('#POW').text(document.character.POW);
+			$('#EDU').text(document.character.EDU+ document.character.EDUBonus);
+			$('#Idea').text(document.character.INT*5);
+			$('#Luck').text(document.character.POW*5);
+			$('#Know').text(document.character.EDU*5);
+			$('#Mythos').text(99-document.character.skills['cthulhu'][3]);
+			$('#Damage').text(document.character.Damage);
+			$('#historia').text(document.character.historia);
+			
+			$($('#sheetSanity li').get((document.character.POW*5)+1)).html('<b class="marcado">'+document.character.POW*5+'</b>');
+			var hits= Math.floor((document.character.SIZ+document.character.CON)/2);
+			$($('#sheetHits li').get(hits+3)).html('<b class="marcado">'+hits+'</b>');
+			$($('#sheetMagic li').get(document.character.POW+1)).html('<b class="marcado">'+document.character.POW+'</b>');
+			
+			
+			
+			var donde=$('#sheetSkills #skills');
+			for(i in document.character.skills){
+				var span=renderSkillSimple(i);
+				$(donde).append(span);
+			}
+			
+		/*	multiColumnSettings=new MultiColumnSettings;
+			multiColumnSettings.classNameScreen='columnized';	
+			multiColumnSettings.numberOfColumns=3;				
+			new MultiColumn(document.getElementById("sheetSkills"),multiColumnSettings);
+			
+			*/
+			
+		});
+		
+	</script>
+<div id="sheet">
+<div class="fila">
+	<div id="sheetBasics" class="cuadro redondo">
+		<p>Investigator Name: <span id='nombre'></span></p>
+		<p>Occupation: <span id='ocupacion'></span></p>
+		<p>Sex: <span id='genero'></span></p>	
+		<p>Age: <span id='edad'></span></p>
+		<p>Residence: <span id='residencia'></span></p>		
+		<p>Income: <span id='ingresos'></span></p>
+		<p>Wounds & Injuries: <span id='heridas'></span></p>	
+		<p>Marks & Scars: <span id='marcas'></span></p>					
+	</div>
+	<div id="sheetRolls" class="cuadro redondo" style="width:30em;">
+		
+			<p>STR: <span id='STR'></span></p>
+			<p>CON: <span id='CON'></span></p>
+			<p>SIZ: <span id='SIZ'></span></p>
+		
+			<p>DEX: <span id='DEX'></span></p>
+			<p>APP: <span id='APP'></span></p>
+			<p>SAN: <span id='SAN'></span></p>
+		
+			<p>INT: <span id='INT'></span></p>
+			<p>POW: <span id='POW'></span></p>
+			<p>EDU: <span id='EDU'></span></p>
+		
+			<p>Idea: <span id='Idea'></span></p>
+			<p>Luck: <span id='Luck'></span></p>
+			<p>Know: <span id='Know'></span></p>
+		
+		<div class="footer">
+			<div class="columna">
+				<p>Mythos: <span id='Mythos'></span></p>
+			</div>
+			<div class="columna">
+				<p>Damage Bonus: <span id='Damage'></span></p>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="fila">
+		
+	<div id="sheetSanity" class="cuadro redondo">
+		<ul >
+			<li>Insane</li><li>0</li><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li><li>7</li><li>8</li><li>9</li><li>10</li><li>11</li><li>12</li><li>13</li><li>14</li><li>15</li><li>16</li><li>17</li><li>18</li><li>19</li><li>20</li><li>21</li><li>22</li><li>23</li><li>24</li><li>25</li><li>26</li><li>27</li><li>28</li><li>29</li><li>30</li><li>31</li><li>32</li><li>33</li><li>34</li><li>35</li><li>36</li><li>37</li><li>38</li><li>39</li><li>40</li><li>41</li><li>42</li><li>43</li><li>44</li><li>45</li><li>46</li><li>47</li><li>48</li><li>49</li><li>50</li><li>51</li><li>52</li><li>53</li><li>54</li><li>55</li><li>56</li><li>57</li><li>58</li><li>59</li><li>60</li><li>61</li><li>62</li><li>63</li><li>64</li><li>65</li><li>66</li><li>67</li><li>68</li><li>69</li><li>70</li><li>71</li><li>72</li><li>73</li><li>74</li><li>75</li><li>76</li><li>77</li><li>78</li><li>79</li><li>80</li><li>81</li><li>82</li><li>83</li><li>84</li><li>85</li><li>86</li><li>87</li><li>88</li><li>89</li><li>90</li><li>91</li><li>92</li><li>93</li><li>94</li><li>95</li><li>96</li><li>97</li><li>98</li><li>99</li></ul>
+		
+	</div>	
+	<div id="sheetMagic" class="cuadro redondo">
+		<ul >
+			<li>Uncounscious</li><li>0</li><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li><li>7</li><li>8</li><li>9</li><li>10</li><li>11</li><li>12</li><li>13</li><li>14</li><li>15</li><li>16</li><li>17</li><li>18</li><li>19</li><li>20</li><li>21</li><li>22</li><li>23</li><li>24</li><li>25</li><li>26</li><li>27</li><li>28</li><li>29</li><li>30</li><li>31</li><li>32</li><li>33</li><li>34</li><li>35</li><li>36</li><li>37</li><li>38</li><li>39</li><li>40</li><li>41</li><li>42</li><li>43</li>		</ul>
+
+	</div>	
+	<div id="sheetHits" class="cuadro redondo">
+		<ul>
+			<li>Dead</li><li>-2</li><li>-1</li>			
+			<li>0</li><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li><li>7</li><li>8</li><li>9</li><li>10</li><li>11</li><li>12</li><li>13</li><li>14</li><li>15</li><li>16</li><li>17</li><li>18</li><li>19</li><li>20</li><li>21</li><li>22</li><li>23</li><li>24</li><li>25</li><li>26</li><li>27</li><li>28</li><li>29</li><li>30</li><li>31</li><li>32</li><li>33</li><li>34</li><li>35</li><li>36</li><li>37</li><li>38</li><li>39</li><li>40</li><li>41</li><li>42</li><li>43</li>		</ul>
+	</div>	
+	
+</div>
+
+<div class="fila">
+	<div id="sheetSkills" class="redondo">
+		<div id="skills"></div>
+		<script type="text/javascript">
+			
+			
+			
+			function renderSkillSimple(skill){
+				var span=document.createElement('span');
+				var texto= document.character.skills[skill][2]+" = <span>"+document.character.skills[skill][3]+"</span>";
+				$(span).html(texto);
+				$(span).append(document.createElement('br'));
+				return span;
+			}
+			
+			
+					
+			
+		</script>
+	</div>		
+</div>
+<div class="fila">
+	<div id="adicional">
+		<p>
+		History: <span id='historia'></span>
+		</p>
+	</div>
+	
+</div>
+</div>
+</body>
+</html>

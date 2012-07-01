@@ -1,0 +1,791 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>Editor de personajes Call of Cthulhu</title>
+		<script type="text/javascript" src="js/jquery-1.3.2.min.js"></script>
+		<script type="text/javascript" src="js/json2.js"></script>
+    </head>
+    <body>
+		<script type="text/javascript">
+			$(document).ready(function(){
+				
+				document.character={
+					'nombre':'John',
+					'genero':'Male',
+					'puntosProfesionales':0,
+					'puntosPersonales':0,
+					'puntosUsados':0,
+					'edad':0,
+					'DEX':10,
+					'STR':12,
+					'CON':11,
+					'SIZ':14,
+					'INT':13,
+					'POW':9,
+					'APP':8,
+					'EDU':6,
+					'EDUBonus':0,
+					'puntos':function(){
+						var puntosUsados=document.character['puntosUsados'];
+						var puntos=document.character['puntosProfesionales']+document.character['puntosPersonales'];
+						var puntosMas= document.character['EDUBonus'];
+						return puntosUsados+puntos+puntosMas;
+					},
+					'skills':new habilidades().skills,
+					'historia':'',
+					'marcas':'',
+					'heridas':''
+				}
+				
+				document.skills= new habilidades().skills;
+				/*document.skills={
+					'accounting':[10,'','Accounting'],
+					'anthropology':[1,'','Anthropology'],
+					'archeology':[1,'','Archeology'],
+					'art':[5,'','Arts'],
+					'astronomy':[1,'','Astronomy'],
+					'bargain':[5,'','Bargain'],
+					'biology':[1,'','Biology'],
+					'chemistry':[1,'','Chemistry'],
+					'climb':[40,'','Climb'],
+					'conceal':[15,'','Conceal'],
+					'craft':[5,'','Craft'],
+					'credit':[15,'','Credit Rating'],
+					'cthulhu':[0,'','Cthulhu Mythos'],
+					'disguise':[1,'','Disguise'],
+					'dodge':[2,'DEX','Dodge'],
+					'electric':[10,'','Electric Repair'],
+					'fasttalk':[5,'','Fast Talk'],
+					'firstaid':[30,'','Firs Aids'],
+					'geology':[1,'','Geology'],
+					'hide':[10,'','Hide'],
+					'history':[20,'','History'],
+					'jump':[25,'','Jump'],
+					'law':[25,'','Law'],
+					'library':[10,'','Library Use'],
+					'listen':[25,'','Listen'],
+					'locksmith':[1,'','Locksmith'],
+					'martial':[1,'','Martial Arts'],
+					'mechanic':[20,'','Mechanic Repairs'],
+					'medicine':[5,'','Medicine'],
+					'natHistory':[10,'','Natural History'],
+					'navigate':[10,'','Navigate'],
+					'occult':[5,'','Occult'],
+					'heavyMachines':[1,'','Operate Heavy Machines'],
+					'languages':[1,'','Others Languages'],
+					'language':[5,'EDU','Own Language'],
+					'persuade':[15,'','Persuade'],
+					'pharmacy':[1,'','Pharmacy'],
+					'photography':[10,'','Photography'],
+					'physics':[1,'','Physics'],
+					'pilot':[1,'','Pilot'],
+					'psychoanalysis':[1,'','Psychoanalysis'],
+					'psychology':[5,'','Psychology'],
+					'ride':[5,'','Ride'],
+					'sneak':[10,'','Sneak'],
+					'spot':[25,'','Spot Hidden'],
+					'swim':[25,'','Swim'],
+					'throw':[25,'','Throw'],
+					'track':[10,'','Track'],
+					'handgun':[20,'','Handgun'],
+					'machinegun':[15,'','Machine Gun'],
+					'rifle':[25,'','Rifle'],
+					'shutgun':[20,'','Shut Gun'],
+					'smg':[15,'','SMG']
+				}*/
+				
+				for(i in document.skills){
+					var a=renderSkill(i);
+					$('#insertaSkills').after(a);
+				}
+				
+				$('#skills input').each(function(){
+					
+					//evento de cambio de inputs
+					$(this).change(function(){
+						//obtenemos el skill en cuestion
+						var skill=$(this).attr('id').substr(2)
+						var spa=$(this).next().next();
+						var valorSkill=document.skills[skill][0];
+						//vemos si hay multiplicador
+						if(document.skills[skill][1]!=''){
+							valorSkill*=document.character[document.skills[skill][1]] //multiplicamos por atributo
+						}
+						
+						valorSkill=valorSkill+parseInt($(this).val()); //le sumamos el valor
+						document.character.skills[skill][3]=valorSkill;
+						$(spa).html('='+valorSkill );
+						setMensajePuntos(document.character['puntosUsados']);
+					});
+				
+				});
+				
+				$('#masDatos input').each(function(){
+					$(this).change(function(){
+						var cual= $(this).attr('id');
+						document.character[cual]=$(this).val();
+						
+					});
+				});
+				$('#edad select').change(function(){
+						document.character['edad']=$(this).val();
+				});
+				
+				$('#masDatos textarea').each(function(){
+					$(this).change(function(){
+						var cual= $(this).attr('id');
+						
+						document.character[cual]=$(this).val();
+						
+					});
+				});
+				
+				//botonos aumentar y quitar skill
+				$('#skills button.menos').live('click',function(){
+					//quita un punto al skill
+					var actual=parseInt($($(this).next()).val());
+					if (actual > 0) {
+						$($(this).next()).val(actual - 1);
+						document.character['puntosUsados']=document.character['puntosUsados']-1;
+						$($(this).next()).change();
+					}
+				});
+				
+				$('#skills button.mas').live('click',function(){
+					//quita un punto al skill
+					var actual=parseInt($($(this).prev()).val());
+					var puntosUsados=document.character['puntosUsados'];
+					//var puntos=document.character['puntosProfesionales']+document.character['puntosPersonales'];
+					  if (document.character['puntosUsados'] <  document.character['puntos']) { //solo aumentamos si le quedan
+					  	$($(this).prev()).val(actual + 1);
+					  	document.character['puntosUsados'] = document.character['puntosUsados']+1;
+					  	$($(this).prev()).change();
+					  }
+						
+				});
+				
+				
+				//eventos de dados
+				
+				$('#dados select').change(cambioAtributo);
+				$('#dados #STR').change(cambioDamage);
+				$('#dados #SIZ').change(cambioDamage);
+				
+				$('#age').change(function(){
+					//modifica atributos y skills de acuerdo a la edad
+					var edadMinima=parseInt(document.character['EDU'])+6;
+					var edadSeleccionada= parseInt($(this).val());
+					document.character['EDUBonus']= Math.floor(edadSeleccionada/10 -edadMinima/10) //puntos a sumar
+					document.edad=edadSeleccionada;
+					
+				});
+				
+				$('#datosBasicos #nombre').change(function(){document.character['nombre']=$(this).val();});
+				$("input[name='genero']").change(function(){
+					document.character['genero'] = $("input[name='genero']:checked").val();
+				});
+				
+			
+			//eventos de los skills
+			$('#skills input').change(function(e){
+				var quien= e.target;
+				var texto=$(quien).val();
+				var numeros=texto.replace(/[^0-9]/g,'');
+				$(quien).val(numeros);
+				
+				
+			});	
+				
+				//avanza(3);
+			});
+			
+			function habilidades(){
+				
+				this.skills={'accounting':[10,'','Accounting',0],
+					'anthropology':[1,'','Anthropology',0],
+					'archeology':[1,'','Archeology',0],
+					'art':[5,'','Arts',0],
+					'astronomy':[1,'','Astronomy',0],
+					'bargain':[5,'','Bargain',0],
+					'biology':[1,'','Biology',0],
+					'chemistry':[1,'','Chemistry',0],
+					'climb':[40,'','Climb',0],
+					'conceal':[15,'','Conceal',0],
+					'craft':[5,'','Craft',0],
+					'credit':[15,'','Credit Rating',0],
+					'cthulhu':[0,'','Cthulhu Mythos',0],
+					'disguise':[1,'','Disguise',0],
+					'dodge':[2,'DEX','Dodge',0],
+					'electric':[10,'','Electric Repair',0],
+					'fasttalk':[5,'','Fast Talk',0],
+					'firstaid':[30,'','Firs Aids',0],
+					'geology':[1,'','Geology',0],
+					'hide':[10,'','Hide',0],
+					'history':[20,'','History',0],
+					'jump':[25,'','Jump',0],
+					'law':[25,'','Law',0],
+					'library':[10,'','Library Use',0],
+					'listen':[25,'','Listen',0],
+					'locksmith':[1,'','Locksmith',0],
+					'martial':[1,'','Martial Arts',0],
+					'mechanic':[20,'','Mechanic Repairs',0],
+					'medicine':[5,'','Medicine',0],
+					'natHistory':[10,'','Natural History',0],
+					'navigate':[10,'','Navigate',0],
+					'occult':[5,'','Occult',0],
+					'heavyMachines':[1,'','Operate Heavy Machines',0],
+					'languages':[1,'','Others Languages',0],
+					'language':[5,'EDU','Own Language',0],
+					'persuade':[15,'','Persuade',0],
+					'pharmacy':[1,'','Pharmacy',0],
+					'photography':[10,'','Photography',0],
+					'physics':[1,'','Physics',0],
+					'pilot':[1,'','Pilot',0],
+					'psychoanalysis':[1,'','Psychoanalysis',0],
+					'psychology':[5,'','Psychology',0],
+					'ride':[5,'','Ride',0],
+					'sneak':[10,'','Sneak',0],
+					'spot':[25,'','Spot Hidden',0],
+					'swim':[25,'','Swim',0],
+					'throw':[25,'','Throw',0],
+					'track':[10,'','Track',0],
+					'handgun':[20,'','Handgun',0],
+					'machinegun':[15,'','Machine Gun',0],
+					'rifle':[25,'','Rifle',0],
+					'shutgun':[20,'','Shut Gun',0],
+					'smg':[15,'','SMG',0]
+					};
+				
+			}
+			
+			
+			function renderSkill(skill){
+				var span= document.createElement('span');
+				var label= document.createElement('label');
+				label.setAttribute('for','SK'+skill); //skaccount, skcredit,etc
+				
+				var texto; 
+				if (document.skills[skill][1] != '') {
+					texto =document.skills[skill][2]+" "+ document.skills[skill][1] + " x" + document.skills[skill][0] + '%';
+				}
+				else {
+					texto=document.skills[skill][2]+" "+ document.skills[skill][0]+'%'
+				}
+				
+				$(label).text(texto);
+				$(span).append(label);
+				var butm=document.createElement('button');
+				butm.setAttribute('class','menos');
+				$(butm).text('-');
+				$(span).append(butm);
+				var input=document.createElement('input');
+				$(input).attr('id','SK'+skill);
+				$(input).attr('disabled','disabled');
+				$(input).attr('size',2);
+				$(input).val('0');
+				$(span).append(input);
+				var butM=document.createElement('button');
+				butM.setAttribute('class','mas');
+				$(butM).text('+');
+				$(span).append(butM);
+				var resultado= document.createElement('span');
+				var texto2='';
+				//establecemos valor base
+				var valorBase;
+				if (document.skills[skill][1] != '') {
+					//resultado con multi
+					valorBase=parseInt(document.character[document.skills[skill][1]]*document.skills[skill][0]);
+					
+				}
+				else {
+					valorBase=parseInt(document.skills[skill][0]);
+				}
+				texto2='='+valorBase;
+				$(resultado).text(texto2);
+				$(resultado).attr('id','sp'+skill);
+				$(span).append(resultado);
+				var br= document.createElement('br');
+				$(span).append(br);
+				
+				//seteamos en el personaje el skill
+				document.character.skills[skill][3]=valorBase;
+				return span;
+			}
+			
+
+			function setMensajePuntos(puntos){
+				$('#skUsados').html(puntos);
+			}
+
+			function cambioDamage(){
+				
+				var sele=$('#dados #Damage');
+				$(sele).empty();
+				//calculamos minimo y maximo
+				var cuanto= document.character['STR']+document.character['SIZ'];
+				var minimo;
+				var maximo;
+				if(cuanto<13){
+					minimo=-6;
+					maximo=-1;
+				}else if(cuanto<17){
+					minimo=-4;
+					maximo=-1;
+				}else if(cuanto<25){
+					minimo=0;
+					maximo=0;
+				}else if(cuanto<33){
+					minimo=1;
+					maximo=4;
+				}else if(cuanto<41){
+					minimo=1;
+					maximo=6;
+				}else if(cuanto<57){
+					minimo=2;
+					maximo=12;
+				}else if(cuanto<73){
+					minimo=3;
+					maximo=18;
+				}else{
+					minimo=4;
+					maximo=24;
+				}
+				for(var i=minimo;i<=maximo;i++){
+					var option= document.createElement('option');
+					$(option).attr('value',i);
+					$(option).text(i);
+					$(sele).append(option);
+					
+				}
+				$('#dados #Damage').trigger('change');
+			}
+			
+			function cambioAtributoDamage(){
+				
+				var cuanto= document.character['STR']+document.character['SIZ'];
+				var bonus=0;
+				if(cuanto<13){
+					bonus=-6;
+				}else if(cuanto<17){
+					bonus=0-randomDado(1,6);
+				}else if(cuanto<25){
+					bonus=0-randomDado(1,4);
+				}else if(cuanto<33){
+					bonus=randomDado(1,4);
+				}else if(cuanto<41){
+					bonus=randomDado(1,6);
+				}else if(cuanto<57){
+					bonus=randomDado(2,6);
+				}else if(cuanto<73){
+					bonus=randomDado(3,6);
+				}else{
+					bonus=randomDado(4,6);
+				}
+				
+				$('#dados #Damage').val(bonus);
+				$('#dados #Damage').trigger('change');
+			}
+			
+			function randomDado(cuantosDados,valor){
+				var total=0;
+				for(var i=0;i<cuantosDados;i=i+1){
+					total+=Math.floor(Math.random()*valor)+1 ;//de 1 a 6
+				}
+				return total;
+			}
+			
+			function cambioAtributo(){
+			var atributo=$(this).attr('id');
+			var valor=parseInt($(this).val());
+					document.character[atributo]=valor;
+					if(atributo=='EDU'){
+						document.character['puntosProfesionales']=valor*20; 
+					}else if (atributo=='INT'){
+						document.character['puntosPersonales']=valor*10;
+					}
+			}
+			
+			
+			function aleatorio(cual){
+				if (cual == 'Damage') {
+					cambioAtributoDamage();
+				}else {
+					var cuantosDados = 3;
+					var total = 0;
+					if (cual == "INT" || cual == "SIZ") {
+						cuantosDados = 2;
+						total = 6;
+					}
+					else 
+						if (cual == "EDU") {
+							total = 3;
+						}
+					
+					for (var i = 0; i < cuantosDados; i = i + 1) {
+						total += Math.floor(Math.random() * 5) + 1;//de 1 a 6
+					}
+				}
+				
+				$('#'+cual).val(total);
+				$('#'+cual).trigger('change');
+				
+				
+			}
+			
+			function validaDatos(){
+				//vemos que los datos no esten vacios
+				
+			}
+			
+			
+			function avanza(numero){
+				
+				
+				
+				switch (numero){
+					case 0: //inicio
+					$('#container div').hide();
+					$('#container #inicio').show();
+						break;
+					case 1:// atributos
+					$('#container div').hide();
+					$('#container #dados').show();
+						break;
+					case 2: //edad
+					$('#container div').hide();
+					$('#container #edad').show();
+					preparaEdad();
+						break;
+					case 3: //skills
+					preparaSkills();
+					$('#container div').hide();
+					$('#container #skills').show();
+						break;	
+					case 4: //masDatos
+					preparaSkills();
+					$('#container div').hide();
+					$('#container #masDatos').show();
+						break;	
+					case 5: //mostrar personaje
+					enviaDatos();
+						break;
+	
+				}
+				$('#container #pub2').show();
+			}
+			
+			function enviaDatos(){
+				var forma= document.createElement('form');
+				$(forma).attr('action','sheet.html');
+				$(forma).attr('method','get');
+				var hid= document.createElement('input');
+				$(hid).attr('type','hidden');
+				$(hid).attr('name','character');
+				$(hid).val(JSON.stringify(document.character));
+				$(forma).append(hid);
+				$('body').append(forma);
+				$(forma).submit();
+				
+			}
+			
+			function preparaEdad(){
+				//obtenemos edad minima
+				var edadMinima=parseInt(document.character['EDU'])+6;
+				var select= $('#edad #age');
+				$(select).empty();
+				for(var i=edadMinima;i<99;i++){
+					var opcion= document.createElement('option');
+					$(opcion).val(i);
+					$(opcion).html(i);
+					select.append(opcion);		
+				}	
+			}
+			
+			function preparaSkills(){
+				//tenemos EDU*20 + INT*10 skills para repartir
+				var puntosEdu= (document.character['EDU']+document.character['EDUBonus'])*20;
+				var puntosHobbies=document.character['INT']*10;
+				document.character['puntos']=puntosEdu+puntosHobbies;
+				
+				$('#skPuntos').html(puntosEdu);
+				$('#skHobbies').html(puntosHobbies);
+				$('#skTotal').html(puntosEdu+puntosHobbies);
+				$('#skUsados').html(document.character['puntosUsados']);
+			}
+		</script>
+		
+        <h1>Call of Cthulhu Character Creator (C<sup>4</sup>)</h1>
+		<div id="root" style="width:70em">
+		<div id="container" style="width:50em;float:left;">
+		<div id="inicio" >
+		First of all let's pick your investigator's name and gender:
+		
+			<p>
+			<label for="nombre">Name</label>
+			<input id="nombre" value="John">
+			</p>
+			<p>
+			Gender:<br>
+			<input type="radio" name="genero" value="hombre" id="generoHombre" checked>
+			<label for=="generoHombre">Male</label>
+			<input type="radio" name="genero" value="mujer" id="generoMujer">
+			<label for=="generoMujer">Female</label>
+			</p>
+			
+			<p>
+			<button onClick="avanza(1);">
+				Continue
+			</button>
+			</p>
+		
+		</div>
+		
+		<div id="dados" style="display:none;">
+		<p>Now select the value for each attribute, you can also use a random value
+			
+			</p>
+			<p>
+			<label for="STR">Strength*</label>
+			<select id="STR" title="valor">
+				<option value="-" checked>-</option>
+				<option value="3">3</option>
+				<option value="4">4</option>
+				<option value="5">5</option>
+				<option value="6">6</option>
+				<option value="7">7</option>
+				<option value="8">8</option>
+				<option value="9">9</option>
+				<option value="10">10</option>
+				<option value="11">11</option>
+				<option value="12">12</option>
+				<option value="13">13</option>
+				<option value="14">14</option>
+				<option value="15">15</option>
+				<option value="16">16</option>
+				<option value="17">17</option>
+				<option value="18">18</option>
+			</select>
+			<button id="randomSTR" onClick="aleatorio('STR')">random</button>
+			</p>
+			<p>
+			<label for="CON">Constitution</label>
+			<select id="CON" title="valor">
+				<option value="-" checked>-</option>
+				<option value="3">3</option>
+				<option value="4">4</option>
+				<option value="5">5</option>
+				<option value="6">6</option>
+				<option value="7">7</option>
+				<option value="8">8</option>
+				<option value="9">9</option>
+				<option value="10">10</option>
+				<option value="11">11</option>
+				<option value="12">12</option>
+				<option value="13">13</option>
+				<option value="14">14</option>
+				<option value="15">15</option>
+				<option value="16">16</option>
+				<option value="17">17</option>
+				<option value="18">18</option>
+			</select>
+			<button id="randomCON" onClick="aleatorio('CON')">random</button>
+			</p>
+			<p>
+			<label for="DEX">Dexterity</label>
+			<select id="DEX" title="valor">
+				<option value="-" checked>-</option>
+				<option value="3">3</option>
+				<option value="4">4</option>
+				<option value="5">5</option>
+				<option value="6">6</option>
+				<option value="7">7</option>
+				<option value="8">8</option>
+				<option value="9">9</option>
+				<option value="10">10</option>
+				<option value="11">11</option>
+				<option value="12">12</option>
+				<option value="13">13</option>
+				<option value="14">14</option>
+				<option value="15">15</option>
+				<option value="16">16</option>
+				<option value="17">17</option>
+				<option value="18">18</option>
+			</select>
+			<button id="randomDEX" onClick="aleatorio('DEX')">random</button>
+			</p>
+			<p>
+			<label for="POW">Power</label>
+			<select id="POW" title="valor">
+				<option value="-" checked>-</option>
+				<option value="3">3</option>
+				<option value="4">4</option>
+				<option value="5">5</option>
+				<option value="6">6</option>
+				<option value="7">7</option>
+				<option value="8">8</option>
+				<option value="9">9</option>
+				<option value="10">10</option>
+				<option value="11">11</option>
+				<option value="12">12</option>
+				<option value="13">13</option>
+				<option value="14">14</option>
+				<option value="15">15</option>
+				<option value="16">16</option>
+				<option value="17">17</option>
+				<option value="18">18</option>
+			</select>
+			<button id="randomPOW" onClick="aleatorio('POW')">random</button>
+			</p>
+			<p>
+			<label for="APP">Appereance</label>
+			<select id="APP" title="valor">
+				<option value="-" checked>-</option>
+				<option value="3">3</option>
+				<option value="4">4</option>
+				<option value="5">5</option>
+				<option value="6">6</option>
+				<option value="7">7</option>
+				<option value="8">8</option>
+				<option value="9">9</option>
+				<option value="10">10</option>
+				<option value="11">11</option>
+				<option value="12">12</option>
+				<option value="13">13</option>
+				<option value="14">14</option>
+				<option value="15">15</option>
+				<option value="16">16</option>
+				<option value="17">17</option>
+				<option value="18">18</option>
+			</select>
+			<button id="randomAPP" onClick="aleatorio('APP')">random</button>
+			</p>
+			<p>
+			<label for="EDU">Education</label>
+			<select id="EDU" title="valor">
+				<option value="-" checked>-</option>
+				<option value="3">3</option>
+				<option value="4">4</option>
+				<option value="5">5</option>
+				<option value="6">6</option>
+				<option value="7">7</option>
+				<option value="8">8</option>
+				<option value="9">9</option>
+				<option value="10">10</option>
+				<option value="11">11</option>
+				<option value="12">12</option>
+				<option value="13">13</option>
+				<option value="14">14</option>
+				<option value="15">15</option>
+				<option value="16">16</option>
+				<option value="17">17</option>
+				<option value="18">18</option>
+			</select>
+			<button id="randomEDU" onClick="aleatorio('EDU')">random</button>
+			</p>
+			<p>
+			<label for="SIZ">Size*</label>
+			<select id="SIZ" title="valor">
+				<option value="-" checked>-</option>
+				<option value="8">8</option>
+				<option value="9">9</option>
+				<option value="10">10</option>
+				<option value="11">11</option>
+				<option value="12">12</option>
+				<option value="13">13</option>
+				<option value="14">14</option>
+				<option value="15">15</option>
+				<option value="16">16</option>
+				<option value="17">17</option>
+				<option value="18">18</option>
+			</select>
+			<button id="randomSIZ" onClick="aleatorio('SIZ')">random</button>
+			</p>
+			<p>
+			<label for="INT">Intelligence</label>
+			<select id="INT" title="valor">
+				<option value="-" checked>-</option>
+				<option value="8">8</option>
+				<option value="9">9</option>
+				<option value="10">10</option>
+				<option value="11">11</option>
+				<option value="12">12</option>
+				<option value="13">13</option>
+				<option value="14">14</option>
+				<option value="15">15</option>
+				<option value="16">16</option>
+				<option value="17">17</option>
+				<option value="18">18</option>
+			</select>
+			<button id="randomINT" onClick="aleatorio('INT')">random</button>
+			</p>
+			<p>
+			<label for="Damage">Damage Bonus</label>
+			<select id="Damage" title="Damage Bonus">
+					<option value="-" checked>-</option>
+			</select>
+			<button id="randomDamage" onClick="aleatorio('Damage')">random</button>
+			</p>
+			<p>* Will reset Damage Bonus</p>
+			<button onClick="avanza(2);">Continue</button>
+		</div>
+		
+		<div id="skills" style="display:none;">
+			You have <span id="skPuntos"></span> Profession ponts<br>
+			and <span id="skHobbies"></span> personal points.<br>
+			You have used <span id="skUsados"></span> of <span id="skTotal"></span> points in total.
+		<br id="insertaSkills">
+		
+		<button  onClick="avanza(4);">Continue</button>
+			
+			
+		</div>
+		
+		<div id="edad" style="display:none;">
+			<p>
+				Select your investigator's age. Being older brings bonuses but beware of chosing ages over 40 since they will also bring some penalties<br>
+			<label for="age">Edad</label>
+			<select id="age"></select>
+			</p>
+			<button onClick="avanza(3);">Continue</button>
+		</div>
+		<div id="masDatos" style="display:none;">
+			<p>
+				Now some aditional information:
+				</p>
+			<p>
+			<label for="ocupacion">Ocupation / Job</label>
+			<input id="ocupacion"></input>
+			</p>
+			<p>
+			<label for="residencia">Residence</label>
+			<input id="residencia"></input>
+			</p>
+			<p>
+			<label for="ingresos">Income (year)</label>
+			<input id="ingresos"></input>
+			</p>
+			<p>
+			<label for="historia">History</label>
+			<textarea id="historia">Born in London...</textarea>
+			</p>		
+			<p>
+			<label for="heridas">Wounds & Injuries</label>
+			<textarea id="heridas"> </textarea>
+			</p>
+			<p>
+			<label for="marcas">Marks & Skars</label>
+			<textarea id="marcas"> </textarea>
+			</p>
+			<button onClick="avanza(5);">Continue</button>
+		</div>
+			
+		 </div>
+	 </div>
+	 
+	 	 	
+	 
+	 </div>
+    </body>
+</html>
